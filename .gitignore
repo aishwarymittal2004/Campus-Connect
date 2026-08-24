@@ -1,0 +1,43 @@
+# Environment variables
+.env
+.env.*
+backend/.env
+
+# Virtual environments
+venv/
+.venv/
+env/
+backend/venv/
+backend/.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Uploaded files
+uploads/
+backend/app/uploads/
+backend/app/static/resumes/
+
+# Node modules
+node_modules/
+
+# Build folders
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Database files
+*.db
+*.sqlite3

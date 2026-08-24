@@ -1,0 +1,107 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: campus_connect_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-campus}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-campus}
+      POSTGRES_DB: ${POSTGRES_DB:-campus_connect}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-campus} -d ${POSTGRES_DB:-campus_connect}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - campus_connect_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: campus_connect_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - campus_connect_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: campus_connect_backend
+    restart: unless-stopped
+    environment:
+      APP_NAME: Campus Connect API
+      APP_ENV: ${APP_ENV:-production}
+      DEBUG: ${DEBUG:-False}
+      SECRET_KEY: ${SECRET_KEY:?Set a strong SECRET_KEY in your .env file}
+      JWT_ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-campus}:${POSTGRES_PASSWORD:-campus}@postgres:5432/${POSTGRES_DB:-campus_connect}
+      DATABASE_URL_SYNC: postgresql+psycopg2://${POSTGRES_USER:-campus}:${POSTGRES_PASSWORD:-campus}@postgres:5432/${POSTGRES_DB:-campus_connect}
+      REDIS_URL: redis://redis:6379/0
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000,http://localhost}
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+      AMAZON_AFFILIATE_TAG: ${AMAZON_AFFILIATE_TAG:-}
+      AMAZON_ACCESS_KEY: ${AMAZON_ACCESS_KEY:-}
+      AMAZON_SECRET_KEY: ${AMAZON_SECRET_KEY:-}
+      FLIPKART_AFFILIATE_ID: ${FLIPKART_AFFILIATE_ID:-}
+      FLIPKART_AFFILIATE_TOKEN: ${FLIPKART_AFFILIATE_TOKEN:-}
+      ZOMATO_API_KEY: ${ZOMATO_API_KEY:-}
+      SWIGGY_API_KEY: ${SWIGGY_API_KEY:-}
+      FIRST_ADMIN_EMAIL: ${FIRST_ADMIN_EMAIL:-admin@campusconnect.app}
+      FIRST_ADMIN_PASSWORD: ${FIRST_ADMIN_PASSWORD:?Set FIRST_ADMIN_PASSWORD in your .env file}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    networks:
+      - campus_connect_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: /api/v1
+    container_name: campus_connect_frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    networks:
+      - campus_connect_network
+
+networks:
+  campus_connect_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

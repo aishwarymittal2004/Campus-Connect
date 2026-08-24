@@ -13,6 +13,8 @@ const MODE_BORDER_COLOR: Record<string, string> = {
   auto: "border-l-transit-auto",
   walk: "border-l-transit-walk",
   mixed: "border-l-transit-mixed",
+  train: "border-l-blue-500",
+  flight: "border-l-purple-500",
 };
 
 interface RouteOptionCardProps {
@@ -55,7 +57,21 @@ export function RouteOptionCard({ option, sourceLocation, destinationName, onTog
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="font-display font-semibold">{meta.label}</span>
-            <Badge variant={meta.badgeVariant} className="hidden sm:inline-flex">
+            <Badge
+  variant={
+    ["default", "secondary", "outline", "destructive", "accent"].includes(
+      meta.badgeVariant
+    )
+      ? (meta.badgeVariant as
+          | "default"
+          | "secondary"
+          | "outline"
+          | "destructive"
+          | "accent")
+      : "secondary"
+  }
+  className="hidden sm:inline-flex"
+>
               {option.distance_km.toFixed(1)} km
             </Badge>
           </div>
@@ -109,11 +125,11 @@ export function RouteOptionCard({ option, sourceLocation, destinationName, onTog
               </li>
             ))}
           </ol>
-          
+
           {option.transport_type === "train" && sourceLocation && destinationName && (
             <div className="mt-4 border-t border-border pt-3 flex justify-end gap-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 className="gap-2"
                 onClick={() => {
@@ -125,11 +141,11 @@ export function RouteOptionCard({ option, sourceLocation, destinationName, onTog
               </Button>
             </div>
           )}
-          
+
           {option.transport_type === "flight" && sourceLocation && destinationName && (
             <div className="mt-4 border-t border-border pt-3 flex justify-end gap-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 className="gap-2"
                 onClick={() => {
